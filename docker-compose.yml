@@ -20,7 +20,8 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://192.168.99.100:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://34.244.78.168:9092'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
 
   schema_registry:
@@ -41,10 +42,36 @@ services:
     depends_on:
       - zookeeper
       - broker
+      - schema_registry
     ports:
       - '8082:8082'
     environment:
       KAFKA_REST_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_REST_LISTENERS: http://kafka-rest:8082
-      KAFKA_REST_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      KAFKA_REST_SCHEMA_REGISTRY_URL: http://schema_registry:8081
       KAFKA_REST_HOST_NAME: kafka-rest
+
+  aip-kafka-proxy:
+    image: aip-kafka-proxy
+    container_name: aip-kafka-proxy
+    depends_on:
+      - zookeeper
+      - broker
+    ports:
+      - '8080:8080'
+    environment:
+      ZK_ADDRESS: 'zookeeper'
+      ZK_PORT: '2181'
+
+  aip-bis-connector:
+    image: aip-bis-connector
+    container_name: aip-bis-connector
+    depends_on:
+      - zookeeper
+      - broker
+    environment:
+      ZK_ADDRESS: 'zookeeper'
+      ZK_PORT: '2181'
+      DATA_DIR: '/data'
+      TASK_SCHEDULE: '*/15 * * * *'
+      TOPIC: 'AMS'
